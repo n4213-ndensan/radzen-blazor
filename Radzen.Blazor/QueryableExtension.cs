@@ -1568,21 +1568,24 @@ namespace Radzen
             {
                 var ignoreCase = cs == FilterCaseSensitivity.CaseInsensitive;
                 var parameter = Expression.Parameter(source.ElementType, "it");
-                Expression propertyExpression = null;
+                var inMemory = typeof(EnumerableQuery).IsAssignableFrom(source.GetType());
+
+                Expression propertyExpression = parameter;
 
                 if (!string.IsNullOrEmpty(property))
                 {
                     propertyExpression = GetNestedPropertyExpression(parameter, property);
                 }
 
-                if (string.IsNullOrEmpty(property) || propertyExpression?.Type != typeof(string))
+                if (string.IsNullOrEmpty(property) && inMemory || 
+                    propertyExpression != null && propertyExpression.Type != typeof(string))
                 {
                     propertyExpression = Expression.Call(notNullCheck(parameter), "ToString", Type.EmptyTypes);
                 }
 
                 if (ignoreCase)
                 {
-                    propertyExpression = Expression.Call(propertyExpression, "ToLower", Type.EmptyTypes);
+                    propertyExpression = Expression.Call(notNullCheck(propertyExpression), "ToLower", Type.EmptyTypes);
                 }
 
                 var constantExpression = Expression.Constant(ignoreCase ? value.ToLower() : value, typeof(string));
